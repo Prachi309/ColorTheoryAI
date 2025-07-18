@@ -1,0 +1,16 @@
+fastapi
+opencv-python
+Pillow
+numpy
+torch
+torchvision
+scikit-image
+requests
+uvicorn
+validators
+matplotlib
+colour-science
+setuptools 
+mediapipe
+scikit-learn
+google-search-results

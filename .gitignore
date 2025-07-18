@@ -1,0 +1,64 @@
+# --- OS/Editor Files ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- Python (facer/) ---
+facer/__pycache__/
+facer/*.pyc
+facer/*.pyo
+facer/*.pyd
+facer/.ipynb_checkpoints/
+facer/venv/
+facer/env/
+facer/.venv/
+facer/ENV/
+facer/.vscode/
+facer/.idea/
+facer/*.log
+facer/*.pth
+facer/*.h5
+facer/*.ckpt
+facer/*.pt
+facer/*.npz
+facer/*.npy
+facer/.env
+facer/.DS_Store
+
+# --- Node/React (frontend-in/) ---
+frontend-in/node_modules/
+frontend-in/dist/
+frontend-in/build/
+frontend-in/.env
+frontend-in/.env.local
+frontend-in/.env.*.local
+frontend-in/npm-debug.log*
+frontend-in/yarn-debug.log*
+frontend-in/yarn-error.log*
+frontend-in/pnpm-debug.log*
+frontend-in/.DS_Store
+
+# --- Root/General ---
+.env
+.env.local
+.env.*.local
+node_modules/
+dist/
+build/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- IDE/Project Files ---
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

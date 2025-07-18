@@ -1,0 +1,142 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* Palette Container */
+.palette-container {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px #a084ee22;
+  padding: 2rem 2.5rem;
+  margin: 2rem auto;
+  max-width: 700px;
+  width: 100%;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+/* Section Titles */
+.palette-container h2,
+.palette-container h3 {
+  color: #7b7be5;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+/* Analysis Section */
+.analysis-section {
+  background: linear-gradient(90deg, #f6f3ff 0%, #e0d7fa 100%);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #444;
+  font-size: 1.1rem;
+}
+
+/* Palette Swatches */
+.palette-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 1.5rem;
+}
+
+.palette-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90px;
+  margin-bottom: 8px;
+}
+
+.swatch-color {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 2px solid #e0d7fa;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px #a084ee22;
+}
+
+.swatch-label {
+  font-size: 0.95rem;
+  color: #7b7be5;
+  font-weight: 600;
+  text-align: center;
+  word-break: break-all;
+}
+
+/* Clothing & Makeup Suggestions */
+.suggestions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 0.5rem;
+}
+
+.suggestion-item {
+  background: #f6f3ff;
+  border-radius: 8px;
+  padding: 6px 14px;
+  color: #a084ee;
+  font-weight: 500;
+  font-size: 1rem;
+  border: 1px solid #e0d7fa;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+  .palette-container {
+    padding: 1rem 0.5rem;
+  }
+  .palette-swatches {
+    gap: 10px;
+  }
+  .palette-swatch {
+    width: 70px;
+  }
+  .swatch-color {
+    width: 36px;
+    height: 36px;
+  }
+}
