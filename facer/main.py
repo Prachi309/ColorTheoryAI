@@ -17,6 +17,8 @@ from fastapi import Query
 from fastapi import Form
 from fastapi import Body
 import logging
+import gc
+import torch
 
 
 app = FastAPI()
@@ -33,6 +35,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
+@app.on_event("startup")
+async def startup_event():
+    """Preload models to avoid memory spikes"""
+    try:
+        f.get_models()  # Preload face detection models
+        m.get_model()   # Preload skin model
+        f.get_face_mesh()  # Preload MediaPipe model
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception as e:
+        print(f"⚠️ Warning: Could not preload all models: {e}")
+
 @app.get("/")
 async def root():
     return {"message": "Colorinsight Personal Color Analysis API", "endpoints": ["/image", "/lip"], "docs": "/docs"}

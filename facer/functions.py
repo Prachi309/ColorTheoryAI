@@ -19,16 +19,34 @@ load_dotenv()
 
 api_key = os.getenv("API_KEY")
 
+# Global instances to avoid reloading models
+_face_detector = None
+_face_parser = None
+_device = None
+_face_mesh = None
+
+def get_models():
+    global _face_detector, _face_parser, _device
+    if _face_detector is None:
+        _device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        _face_detector = facer.face_detector('retinaface/mobilenet', device=_device)
+        _face_parser = facer.face_parser('farl/lapa/448', device=_device)
+    return _face_detector, _face_parser, _device
+
+def get_face_mesh():
+    global _face_mesh
+    if _face_mesh is None:
+        mp_face_mesh = mp.solutions.face_mesh
+        _face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True)
+    return _face_mesh
+
 
 def get_rgb_codes(path):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    face_detector, face_parser, device = get_models()
     image = facer.hwc2bchw(facer.read_hwc(path)).to(device=device)
-    face_detector = facer.face_detector('retinaface/mobilenet', device=device)
+    
     with torch.inference_mode():
         faces = face_detector(image)
-
-    face_parser = facer.face_parser('farl/lapa/448', device=device)
-    with torch.inference_mode():
         faces = face_parser(image, faces)
 
     seg_logits = faces['seg']['logits']
@@ -127,13 +145,11 @@ def save_skin_mask(img_path):
 
 
 def get_eye_color(image_path):
-    import mediapipe as mp
     import cv2
     import numpy as np
     from scipy import stats
 
-    mp_face_mesh = mp.solutions.face_mesh
-    face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True)
+    face_mesh = get_face_mesh()
     image = cv2.imread(image_path)
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     results = face_mesh.process(rgb_image)

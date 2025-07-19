@@ -10,7 +10,7 @@ import UndertoneInfo from './UndertoneInfo';
 import StyleAssistant from "./StyleAssistant";
 
 const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-
+const HERO_IMAGE = 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=400&h=400&facepad=2';
 
 // Helper to safely parse LLM response (strip markdown code block if present)
 function safeParseLLMResponse(llm_response) {
@@ -25,7 +25,6 @@ function safeParseLLMResponse(llm_response) {
     return llm_response;
   }
 }
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 function App() {
   const [mode, setMode] = useState(null); // null, 'image', 'quiz'
@@ -111,7 +110,7 @@ function App() {
       const imageFormData = new FormData();
       imageFormData.append('file', image);
       const imageResponse = await axios.post(
-        `${BACKEND_URL}/image`,
+        'http://localhost:8000/image',
         imageFormData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -127,7 +126,7 @@ function App() {
       formData.append('season', season); // <-- use the season here
 
       const response = await axios.post(
-        `${BACKEND_URL}/palette_llm?openrouter_api_key=${API_KEY}`,
+        `http://localhost:8000/palette_llm?openrouter_api_key=${API_KEY}`,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -146,7 +145,7 @@ function App() {
     try {
       const quizPrompt = `The user selected these colors: ${quizColors.filter(Boolean).join(', ')}. Please analyze and provide a seasonal color palette and recommendations in the same format as usual.`;
       const response = await axios.post(
-        `${BACKEND_URL}/palette_llm?openrouter_api_key=${API_KEY}`,
+        `http://localhost:8000/palette_llm?openrouter_api_key=${API_KEY}`,
         { prompt: quizPrompt },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -545,7 +544,7 @@ function App() {
                 setResult('');
                 try {
                   const response = await axios.post(
-                    `${BACKEND_URL}/quiz_palette_llm?openrouter_api_key=${API_KEY}`,
+                    `http://localhost:8000/quiz_palette_llm?openrouter_api_key=${API_KEY}`,
                     answers,
                     { headers: { 'Content-Type': 'application/json' } }
                   );
