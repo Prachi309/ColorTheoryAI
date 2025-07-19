@@ -7,27 +7,15 @@ os.environ['OMP_NUM_THREADS'] = '1'
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="google.protobuf")
 
+# Defer heavy imports to reduce startup memory
 import fastapi
-import functions as f
-import cv2
-from PIL import Image
-from collections import Counter
-import numpy as np
-import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi import FastAPI, File, UploadFile
-import base64
-import skin_model as m
-import requests
-import re
-from fastapi import Query
-from fastapi import Form
-from fastapi import Body
+from fastapi import File, UploadFile
+from fastapi import Query, Form, Body
 import logging
 import gc
-import torch
 import tempfile
 import io
 import psutil
@@ -103,6 +91,9 @@ def compress_image(image_path: str, max_size: int = 1024, quality: int = 85) -> 
     Returns:
         Path to compressed image
     """
+    # Import PIL only when needed
+    from PIL import Image
+    
     try:
         # Open image
         with Image.open(image_path) as img:
@@ -161,17 +152,23 @@ def cleanup_temp_file(file_path: str) -> None:
 
 @app.on_event("startup")
 async def startup_event():
-    """Startup without preloading models to avoid memory spikes"""
+    """Startup with aggressive memory optimization"""
     try:
         initial_memory = log_memory_usage("at startup")
         
-        logger.info("🚀 Starting with lazy model loading...")
-        logger.info("📝 Models will be loaded on first request to save memory")
+        logger.info("🚀 Starting with aggressive memory optimization...")
+        logger.info("📝 Heavy imports deferred to reduce startup memory")
         
-        # Don't preload models - let them load lazily
-        # This prevents memory spikes during deployment
+        # Force garbage collection
+        gc.collect()
         
-        final_memory = log_memory_usage("after startup")
+        # Clear any cached imports
+        import sys
+        for module_name in list(sys.modules.keys()):
+            if any(x in module_name for x in ['torch', 'cv2', 'sklearn', 'matplotlib']):
+                del sys.modules[module_name]
+        
+        final_memory = log_memory_usage("after cleanup")
         
         logger.info("✅ Application started successfully")
         logger.info(f"📊 Startup memory usage: {final_memory:.1f} MB")
@@ -181,6 +178,7 @@ async def startup_event():
             logger.info(f"✅ Memory usage ({final_memory:.1f} MB) is under 512MB limit!")
         else:
             logger.warning(f"⚠️ Memory usage ({final_memory:.1f} MB) is above 512MB limit")
+            logger.warning("⚠️ Consider upgrading to a larger instance or further optimization")
             
     except Exception as e:
         logger.error(f"⚠️ Warning: Startup error: {e}")
@@ -194,6 +192,7 @@ async def root():
         "memory_usage_mb": round(memory_mb, 1),
         "memory_status": "✅ Under 512MB" if memory_mb < 512 else "⚠️ Above 512MB",
         "loading_strategy": "Lazy Loading (models load on first request)",
+        "optimization": "Aggressive memory optimization enabled",
         "endpoints": ["/image", "/lip", "/skin", "/hair", "/eye", "/analyze_features", "/palette_llm", "/quiz_palette_llm"], 
         "docs": "/docs"
     }
@@ -225,6 +224,10 @@ async def image(file: UploadFile = File(None)):
         initial_memory = log_memory_usage("before image processing")
         
         if file and file.filename:
+            # Import heavy modules only when needed
+            import functions as f
+            import skin_model as m
+            
             # File upload handling
             logger.info(f"Received file: {file.filename}")
             
