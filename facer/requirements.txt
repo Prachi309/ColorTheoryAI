@@ -16,3 +16,4 @@ scikit-learn
 google-search-results
 python-dotenv
 scipy
+python-multipart
