@@ -11,7 +11,7 @@ validators
 matplotlib
 colour-science
 setuptools 
-mediapipe==0.10.5
+mediapipe
 scikit-learn
 google-search-results
 python-dotenv
