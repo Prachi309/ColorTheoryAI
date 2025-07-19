@@ -24,7 +24,7 @@ app = FastAPI()
 
 # Get frontend URL from environment variable
 frontend_url = os.getenv("VITE_FRONTEND_URL")
-
+print("Frontend URL for CORS:", frontend_url)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
