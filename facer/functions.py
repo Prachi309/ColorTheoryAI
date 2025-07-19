@@ -1,3 +1,12 @@
+# Fix OpenMP conflict - MUST BE FIRST
+import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+os.environ['OMP_NUM_THREADS'] = '1'
+
+# Suppress protobuf deprecation warnings
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="google.protobuf")
+
 import argparse
 import glob
 import os
@@ -13,9 +22,15 @@ from skimage.filters import gaussian
 import facer
 import mediapipe as mp
 from dotenv import load_dotenv
-import os
+import logging
+from functools import lru_cache
+import gc
+import psutil
 
 load_dotenv() 
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 api_key = os.getenv("API_KEY")
 
@@ -25,48 +40,156 @@ _face_parser = None
 _device = None
 _face_mesh = None
 
+def get_memory_usage():
+    """Get current memory usage in MB"""
+    process = psutil.Process(os.getpid())
+    memory_mb = process.memory_info().rss / 1024 / 1024
+    return memory_mb
+
+def log_memory_usage(stage=""):
+    """Log current memory usage with stage information"""
+    memory_mb = get_memory_usage()
+    logger.info(f"🧠 Memory Usage {stage}: {memory_mb:.1f} MB")
+    return memory_mb
+
 def get_models():
+    """Get cached face detection and parsing models with quantization"""
     global _face_detector, _face_parser, _device
     if _face_detector is None:
-        _device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        _face_detector = facer.face_detector('retinaface/mobilenet', device=_device)
-        _face_parser = facer.face_parser('farl/lapa/448', device=_device)
+        try:
+            log_memory_usage("before face models load")
+            
+            _device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            logger.info(f"Loading face models on device: {_device}")
+            
+            # Load face detector
+            _face_detector = facer.face_detector('retinaface/mobilenet', device=_device)
+            
+            # QUANTIZE FACE DETECTOR TO REDUCE MEMORY USAGE
+            if hasattr(_face_detector, 'half'):
+                logger.info("🔄 Quantizing face detector to FP16...")
+                _face_detector = _face_detector.half()
+            
+            log_memory_usage("after face detector")
+            
+            # Load face parser
+            _face_parser = facer.face_parser('farl/lapa/448', device=_device)
+            
+            # QUANTIZE FACE PARSER TO REDUCE MEMORY USAGE
+            if hasattr(_face_parser, 'half'):
+                logger.info("🔄 Quantizing face parser to FP16...")
+                _face_parser = _face_parser.half()
+            
+            log_memory_usage("after face parser")
+            
+            logger.info("Face models loaded and quantized successfully")
+            
+            # Force garbage collection
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            log_memory_usage("after face models cleanup")
+            
+        except Exception as e:
+            logger.error(f"Error loading face models: {e}")
+            raise
     return _face_detector, _face_parser, _device
 
 def get_face_mesh():
+    """Get cached MediaPipe face mesh model"""
     global _face_mesh
     if _face_mesh is None:
-        mp_face_mesh = mp.solutions.face_mesh
-        _face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True)
+        try:
+            log_memory_usage("before MediaPipe load")
+            
+            mp_face_mesh = mp.solutions.face_mesh
+            _face_mesh = mp_face_mesh.FaceMesh(
+                static_image_mode=True, 
+                max_num_faces=1, 
+                refine_landmarks=True,
+                min_detection_confidence=0.5
+            )
+            
+            log_memory_usage("after MediaPipe load")
+            
+            logger.info("MediaPipe face mesh loaded successfully")
+        except Exception as e:
+            logger.error(f"Error loading MediaPipe face mesh: {e}")
+            raise
     return _face_mesh
 
-
-def get_rgb_codes(path):
-    face_detector, face_parser, device = get_models()
-    image = facer.hwc2bchw(facer.read_hwc(path)).to(device=device)
+def validate_image_path(image_path: str) -> None:
+    """Validate image file exists and is readable"""
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
     
-    with torch.inference_mode():
-        faces = face_detector(image)
-        faces = face_parser(image, faces)
+    if not os.path.isfile(image_path):
+        raise ValueError(f"Path is not a file: {image_path}")
 
-    seg_logits = faces['seg']['logits']
-    seg_probs = seg_logits.softmax(dim=1)  # nfaces x nclasses x h x w
-    seg_probs = seg_probs.cpu() 
+def get_rgb_codes(path: str) -> np.ndarray:
+    """Extract RGB codes from lip region with error handling and memory optimization"""
+    try:
+        validate_image_path(path)
+        log_memory_usage("before RGB extraction")
+        
+        face_detector, face_parser, device = get_models()
+        
+        # Load image with memory optimization
+        image = facer.hwc2bchw(facer.read_hwc(path)).to(device=device)
+        
+        # Convert to half precision if using GPU
+        if device == 'cuda' and image.dtype == torch.float32:
+            image = image.half()
+        
+        log_memory_usage("after image loading")
+        
+        with torch.inference_mode():
+            faces = face_detector(image)
+            if len(faces) == 0:
+                raise ValueError("No faces detected in image")
+            
+            faces = face_parser(image, faces)
 
-    tensor = seg_probs.permute(0, 2, 3, 1)
-    tensor = tensor.squeeze().numpy()
+        seg_logits = faces['seg']['logits']
+        seg_probs = seg_logits.softmax(dim=1)
+        seg_probs = seg_probs.cpu() 
 
-    llip = tensor[:, :, 7]
-    ulip = tensor[:,:,9]
-    lips = llip+ulip
-    binary_mask = (lips >= 0.5).astype(int)
+        tensor = seg_probs.permute(0, 2, 3, 1)
+        tensor = tensor.squeeze().numpy()
 
-    sample = cv2.imread(path)
-    img = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
+        # Extract lip regions
+        llip = tensor[:, :, 7]
+        ulip = tensor[:,:,9]
+        lips = llip + ulip
+        binary_mask = (lips >= 0.5).astype(int)
 
-    indices = np.argwhere(binary_mask)   #binary mask location extraction
-    rgb_codes = img[indices[:, 0], indices[:, 1], :] #RGB color extraction by pixels
-    return rgb_codes
+        # Read and process image
+        sample = cv2.imread(path)
+        if sample is None:
+            raise ValueError(f"Could not read image: {path}")
+            
+        img = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
+
+        # Extract RGB codes from lip region
+        indices = np.argwhere(binary_mask)
+        if len(indices) == 0:
+            raise ValueError("No lip region detected")
+            
+        rgb_codes = img[indices[:, 0], indices[:, 1], :]
+        
+        # Cleanup GPU memory
+        del image, faces, seg_logits, seg_probs, tensor, sample, img
+        if device == 'cuda':
+            torch.cuda.empty_cache()
+        
+        log_memory_usage("after RGB extraction cleanup")
+            
+        return rgb_codes
+        
+    except Exception as e:
+        logger.error(f"Error in get_rgb_codes: {e}")
+        raise
 
 def filter_lip_random(rgb_codes,randomNum=40):
     blue_condition = (rgb_codes[:, 2] <= 227)
@@ -111,37 +234,72 @@ def calc_dis(rgb_codes):
     return res
 
 
-def save_skin_mask(img_path):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    image = facer.hwc2bchw(facer.read_hwc(img_path)).to(device=device)  
-    face_detector = facer.face_detector('retinaface/mobilenet', device=device)
+def save_skin_mask(img_path: str) -> None:
+    """Save skin mask with improved error handling and memory optimization"""
+    try:
+        validate_image_path(img_path)
+        log_memory_usage("before skin mask processing")
+        
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        
+        # Load image with memory optimization
+        image = facer.hwc2bchw(facer.read_hwc(img_path)).to(device=device)
+        
+        # Convert to half precision if using GPU
+        if device == 'cuda' and image.dtype == torch.float32:
+            image = image.half()
+        
+        log_memory_usage("after skin image loading")
+        
+        face_detector = facer.face_detector('retinaface/mobilenet', device=device)
 
-    with torch.inference_mode():
-      faces = face_detector(image)
+        with torch.inference_mode():
+            faces = face_detector(image)
+            if len(faces) == 0:
+                raise ValueError("No faces detected for skin analysis")
 
-    image = facer.hwc2bchw(facer.read_hwc(img_path)).to(device=device)
-    face_parser = facer.face_parser('farl/lapa/448', device=device)
-    with torch.inference_mode():
-      faces = face_parser(image, faces)
+        log_memory_usage("after face detection")
+        
+        face_parser = facer.face_parser('farl/lapa/448', device=device)
+        with torch.inference_mode():
+            faces = face_parser(image, faces)
 
-    seg_logits = faces['seg']['logits']
-    seg_probs = seg_logits.softmax(dim=1)
-    seg_probs = seg_probs.cpu() 
-    tensor = seg_probs.permute(0, 2, 3, 1)
-    tensor = tensor.squeeze().numpy()
+        seg_logits = faces['seg']['logits']
+        seg_probs = seg_logits.softmax(dim=1)
+        seg_probs = seg_probs.cpu() 
+        tensor = seg_probs.permute(0, 2, 3, 1)
+        tensor = tensor.squeeze().numpy()
 
-    face_skin = tensor[:, :, 1]
-    binary_mask = (face_skin >= 0.5).astype(int)
+        # Extract skin region
+        face_skin = tensor[:, :, 1]
+        binary_mask = (face_skin >= 0.5).astype(int)
 
-    sample = cv2.imread(img_path)
-    img = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
-    masked_image = np.zeros_like(img) 
-    try: 
-      masked_image[binary_mask == 1] = img[binary_mask == 1] 
-      masked_image = cv2.cvtColor(masked_image,cv2.COLOR_BGR2RGB)
-      cv2.imwrite("temp.jpg" , masked_image)
-    except:
-      print("error occurred")
+        # Process and save masked image
+        sample = cv2.imread(img_path)
+        if sample is None:
+            raise ValueError(f"Could not read image: {img_path}")
+            
+        img = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB)
+        masked_image = np.zeros_like(img) 
+        
+        try: 
+            masked_image[binary_mask == 1] = img[binary_mask == 1] 
+            masked_image = cv2.cvtColor(masked_image, cv2.COLOR_RGB2BGR)
+            cv2.imwrite("temp.jpg", masked_image)
+        except Exception as e:
+            logger.error(f"Error saving skin mask: {e}")
+            raise
+            
+        # Cleanup GPU memory
+        del image, faces, seg_logits, seg_probs, tensor, sample, img, masked_image
+        if device == 'cuda':
+            torch.cuda.empty_cache()
+        
+        log_memory_usage("after skin mask cleanup")
+            
+    except Exception as e:
+        logger.error(f"Error in save_skin_mask: {e}")
+        raise
 
 
 def get_eye_color(image_path):

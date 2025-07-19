@@ -3,34 +3,32 @@ Startup script to preload models and reduce memory usage during deployment.
 Run this before starting the main server to warm up the models.
 """
 
+# Fix OpenMP conflict - MUST BE FIRST
 import os
-import sys
-import torch
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+os.environ['OMP_NUM_THREADS'] = '1'
+
+import functions as f
+import skin_model as m
 import gc
+import torch
 
-def preload_models():
-    """Preload all models to avoid memory spikes during first request"""
-    print("🔄 Preloading models...")
+print("🔄 Preloading models for memory optimization...")
+
+try:
+    # Preload all models
+    f.get_models()
+    m.get_model()
+    f.get_face_mesh()
     
-    try:
-        # Import and preload skin model
-        import skin_model
-        print("✅ Skin model loaded")
-        
-        # Import and preload face detection models
-        import functions
-        print("✅ Face detection models loaded")
-        
-        # Force garbage collection
-        gc.collect()
-        torch.cuda.empty_cache() if torch.cuda.is_available() else None
-        
-        print("✅ All models preloaded successfully!")
-        print(f"📊 Memory usage: {torch.cuda.memory_allocated() / 1024**2:.1f} MB" if torch.cuda.is_available() else "📊 Using CPU")
-        
-    except Exception as e:
-        print(f"❌ Error preloading models: {e}")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    preload_models() 
+    # Cleanup memory
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    
+    print("✅ Models preloaded successfully")
+    print("✅ Memory optimized and ready for deployment")
+    
+except Exception as e:
+    print(f"⚠️ Warning: Could not preload all models: {e}")
+    print("⚠️ Application will continue but may be slower on first request") 
