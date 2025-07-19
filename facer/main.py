@@ -27,7 +27,7 @@ frontend_url = os.getenv("VITE_FRONTEND_URL")
 print("Frontend URL for CORS:", frontend_url)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url], 
+    allow_origins=[*], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
