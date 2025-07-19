@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const SERPAPI_KEY = "22b051b2e9182bcb71d59fb43727c5fcb0374fdffcae2697defebbbe6bba0952"; // Replace with your real key or use env for production
-
+const SERPAPI_KEY = import.meta.env.SERPAPI_KEY; 
 const ClothingImageResults = ({ query }) => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -10,12 +9,14 @@ const ClothingImageResults = ({ query }) => {
     if (!query) return;
     setLoading(true);
     fetch(
-      `http://localhost:8000/api/serpapi-proxy?q=${encodeURIComponent(query)}`
+      `${import.meta.env.VITE_BACKEND_URL}/api/serpapi-proxy?q=${encodeURIComponent(query)}`
     )
       .then((res) => res.json())
       .then((data) => {
+        console.log('SerpAPI data:', data);
         setImages(data.images_results?.slice(0, 5) || []);
         setLoading(false);
+        
       })
       .catch(() => setLoading(false));
   }, [query]);
@@ -44,4 +45,4 @@ const ClothingImageResults = ({ query }) => {
   );
 };
 
-export default ClothingImageResults; 
+export default ClothingImageResults;

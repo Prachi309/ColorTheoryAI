@@ -14,3 +14,5 @@ setuptools
 mediapipe
 scikit-learn
 google-search-results
+python-dotenv
+scipy

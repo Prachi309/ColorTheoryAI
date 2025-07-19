@@ -164,7 +164,67 @@ const AIResponseDisplay = ({ response }) => {
   } catch {}
 
   return (
-    <div className="palette-container" style={{ padding: "3rem", fontFamily: "Inter, sans-serif" }}>
+    <div className="palette-container" style={{ padding: "3rem", fontFamily: "Inter, sans-serif", position: "relative" }}>
+      {/* Floating Chat Bubble */}
+      <div style={{
+        position: "fixed",
+        bottom: "32px",
+        right: "32px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "8px",
+        zIndex: 100
+      }}>
+        {/* Floating Text */}
+        <div style={{
+          background: "rgba(255, 255, 255, 0.95)",
+          color: "#7b7be5",
+          padding: "8px 16px",
+          borderRadius: "20px",
+          fontSize: "14px",
+          fontWeight: "600",
+          boxShadow: "0 2px 12px rgba(123, 123, 229, 0.2)",
+          whiteSpace: "nowrap",
+          backdropFilter: "blur(8px)",
+          border: "1px solid rgba(160, 132, 238, 0.2)"
+        }}>
+          What to wear today?
+        </div>
+        {/* Chat Button */}
+        <button 
+          onClick={() => setShowStyleAssistant(true)}
+          className="floating-chat-bubble"
+          style={{
+            width: "72px",
+            height: "72px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #a084ee 0%, #7b7be5 100%)",
+            color: "#fff",
+            border: "3px solid #fff",
+            boxShadow: "0 6px 32px rgba(123, 123, 229, 0.4)",
+            cursor: "pointer",
+            fontSize: "28px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.2s, transform 0.18s cubic-bezier(0.4,0,0.2,1)",
+            zIndex: 100
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = "scale(1.1)";
+            e.target.style.boxShadow = "0 8px 40px rgba(123, 123, 229, 0.5)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = "scale(1)";
+            e.target.style.boxShadow = "0 6px 32px rgba(123, 123, 229, 0.4)";
+          }}
+          aria-label="What to wear today?"
+        >
+          🤔
+        </button>
+      </div>
+
       {hasContent ? <>
         {/* Season Header */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -259,30 +319,16 @@ const AIResponseDisplay = ({ response }) => {
           </SectionCard>
         )}
         
-        <button
-          onClick={() => setShowStyleAssistant(true)}
-          style={{
-            marginTop: 24,
-            background: "#fff",
-            color: "#a084ee",
-            border: "2px solid #a084ee",
-            borderRadius: 8,
-            fontWeight: 700,
-            fontSize: 16,
-            padding: "10px 24px",
-            cursor: "pointer"
-          }}
-        >
-          🤔 What to wear today?
-        </button>
       </> : (
-        <pre style={{
+        <div style={{
           color: '#888',
           background: '#f8f8fa',
           padding: 24,
           borderRadius: 12,
           textAlign: 'center'
-        }}>{typeof response === 'string' ? response : JSON.stringify(response, null, 2) || "No response available"}</pre>
+        }}>
+          No recommendations available. Please try again.
+        </div>
       )}
       {showStyleAssistant && (
         <StyleAssistant

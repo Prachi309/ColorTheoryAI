@@ -126,6 +126,8 @@ Gender: ${answers.gender}
 Body type: ${answers.body_type}
 Context: ${answers.context_answer}
 ${paletteNote}
+When giving results the first priority is the gender of the person and second is the occassion. These are very important.
+When gender = male then do not suggest foundation. just suggest sunscreen or tinted moisturisers and lip balms. VERY IMPORTANT GIVE AS PER INDIAN PEOPLE
 
 Return as JSON array only:
 [
@@ -251,7 +253,16 @@ const StyleAssistant = ({ onClose, season: propSeason, palette: propPalette }) =
           </div>
         </div>
         {/* Chat area and options */}
-        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "transparent", boxSizing: "border-box" }}>
+        <div style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: "transparent",
+          boxSizing: "border-box",
+          flex: 1,
+          minHeight: 0,
+        }}>
           <div
             style={{
               flex: 1,
@@ -261,23 +272,64 @@ const StyleAssistant = ({ onClose, season: propSeason, palette: propPalette }) =
               background: "transparent",
               paddingRight: 8,
               minHeight: 0,
-              boxSizing: "border-box"
+              boxSizing: "border-box",
+              // Add horizontal scroll prevention and word wrapping
+              overflowX: "hidden",
+              wordBreak: "break-word",
+              whiteSpace: "pre-line",
             }}
           >
-            {chat.map((msg, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: msg.from === "user" ? "flex-end" : "flex-start", marginBottom: 12 }}>
-                <div style={{
-                  background: msg.from === "user" ? "#a084ee" : "#fff",
-                  color: msg.from === "user" ? "#fff" : "#333",
-                  borderRadius: 14,
-                  padding: "10px 16px",
-                  maxWidth: 540,
-                  fontSize: 15,
-                  boxShadow: msg.from === "user" ? "0 2px 8px #a084ee33" : "0 2px 8px #eee",
-                  textAlign: "left"
-                }}>{msg.text}</div>
-              </div>
-            ))}
+            {chat.map((msg, i) => {
+              // Check if the message is a JSON code block
+              if (
+                typeof msg.text === "string" &&
+                msg.text.trim().startsWith("```json")
+              ) {
+                // Extract and parse the JSON
+                let jsonStr = msg.text.trim().replace(/^```json/, "").replace(/```$/, "").trim();
+                let items = [];
+                try {
+                  items = JSON.parse(jsonStr);
+                } catch {}
+                return (
+                  <div key={i} style={{ display: "flex", justifyContent: msg.from === "user" ? "flex-end" : "flex-start", marginBottom: 12 }}>
+                    <div style={{
+                      background: msg.from === "user" ? "#a084ee" : "#fff",
+                      color: msg.from === "user" ? "#fff" : "#333",
+                      borderRadius: 14,
+                      padding: "10px 16px",
+                      maxWidth: 540,
+                      fontSize: 15,
+                      boxShadow: msg.from === "user" ? "0 2px 8px #a084ee33" : "0 2px 8px #eee",
+                      textAlign: "left"
+                    }}>
+                      {items.length > 0
+                        ? items.map((item, idx) => (
+                            <div key={idx} style={{ marginBottom: 8 }}>
+                              {item.description}
+                            </div>
+                          ))
+                        : "No recommendations available."}
+                    </div>
+                  </div>
+                );
+              }
+              // Default: show as normal text
+              return (
+                <div key={i} style={{ display: "flex", justifyContent: msg.from === "user" ? "flex-end" : "flex-start", marginBottom: 12 }}>
+                  <div style={{
+                    background: msg.from === "user" ? "#a084ee" : "#fff",
+                    color: msg.from === "user" ? "#fff" : "#333",
+                    borderRadius: 14,
+                    padding: "10px 16px",
+                    maxWidth: 540,
+                    fontSize: 15,
+                    boxShadow: msg.from === "user" ? "0 2px 8px #a084ee33" : "0 2px 8px #eee",
+                    textAlign: "left"
+                  }}>{msg.text}</div>
+                </div>
+              );
+            })}
             {typing && (
               <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 12 }}>
                 <div style={{ background: "#fff", color: "#aaa", borderRadius: 14, padding: "10px 16px", maxWidth: 180, fontSize: 15, fontStyle: "italic" }}>
@@ -287,30 +339,10 @@ const StyleAssistant = ({ onClose, season: propSeason, palette: propPalette }) =
             )}
             {/* Show product recommendations and images after finalReply */}
             {finalReply && !showAll && (
-              <div style={{ marginTop: 24, whiteSpace: "pre-wrap", fontSize: 16, color: "#444" }}>
-                {/* Show only the summary/first 10 lines */}
-                {Array.isArray(productList) && productList.length > 0
-                  ? productList
-                      .slice(0, 3) // show first 3 products as a summary
-                      .map((item, idx) => (
-                        <div key={idx}>
-                          <strong>{item.category}: {item.product}</strong>
-                          <div style={{ color: "#888", fontSize: 14 }}>{item.description}</div>
-                        </div>
-                      ))
-                  : (() => {
-                      // fallback: show first 10 lines of raw text
-                      const lines = cleaned.split('\n').slice(0, 10).join('\n');
-                      return lines.length > 0 ? lines : cleaned.slice(0, 500);
-                    })()
-                }
-              </div>
-            )}
-            {finalReply && !showAll && (
               <button
                 onClick={() => setShowAll(true)}
                 style={{
-                  margin: "24px auto 0 auto",
+                  margin: "24px auto 24px auto", // Add margin-bottom
                   display: "block",
                   background: "#fff",
                   color: "#a084ee",

@@ -155,7 +155,7 @@ const ColorQuiz = ({ onSubmit, loading, result }) => {
       {/* Form and Result Side by Side if result is present */}
       <div style={{ flex: 1, minWidth: 340 }}>
         {!result && (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, maxWidth: 500, margin: '0 auto', background: '#fff', borderRadius: 16, boxShadow: '0 4px 24px #a084ee22', padding: 36, position: 'relative' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Progress Bar */}
             <div style={{ width: '100%', marginBottom: 32 }}>
               <div style={{ fontWeight: 700, color: '#7b7be5', fontSize: 18, marginBottom: 8 }}>Question {page + 1} of {total}</div>
@@ -198,12 +198,21 @@ const ColorQuiz = ({ onSubmit, loading, result }) => {
             </div>
             {submitted && !answers[q.name] && <div style={{ color: 'red', fontSize: 14, marginBottom: 12 }}>Please select an option to continue.</div>}
             {/* Navigation Buttons */}
-            <div style={{ display: 'flex', gap: 16, width: '100%', justifyContent: 'space-between', marginTop: 8 }}>
-              <button type="button" onClick={handleBack} disabled={page === 0} style={{ background: '#f6f3ff', color: '#7b7be5', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 700, fontSize: 16, cursor: page === 0 ? 'not-allowed' : 'pointer', opacity: page === 0 ? 0.5 : 1 }}>Back</button>
-              {page < total - 1 ? (
-                <button type="button" onClick={handleNext} style={{ background: 'linear-gradient(90deg, #a084ee 0%, #f857a6 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 32px', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>Next</button>
-              ) : (
-                <button type="submit" disabled={loading} style={{ background: 'linear-gradient(90deg, #a084ee 0%, #f857a6 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 32px', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>{loading ? 'Analyzing...' : 'Submit'}</button>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 24 }}>
+              {page > 0 && (
+                <button type="button" className="btn btn-outlined" onClick={handleBack} disabled={loading} style={{ minWidth: 100 }}>
+                  ← Back
+                </button>
+              )}
+              {page < total - 1 && (
+                <button type="button" className="btn btn-primary" onClick={handleNext} disabled={loading} style={{ minWidth: 100 }}>
+                  Next →
+                </button>
+              )}
+              {page === total - 1 && (
+                <button type="submit" className="btn btn-primary" disabled={loading} style={{ minWidth: 100 }}>
+                  {loading ? 'Submitting...' : 'Submit'}
+                </button>
               )}
             </div>
           </form>
@@ -230,4 +239,4 @@ const ColorQuiz = ({ onSubmit, loading, result }) => {
   );
 };
 
-export default ColorQuiz; 
+export default ColorQuiz;

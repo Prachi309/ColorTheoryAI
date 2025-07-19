@@ -8,7 +8,7 @@ const seasonColors = {
   Winter: "#6A5ACD",
 };
 
-// Helper to parse "- #HEX (Name)" into {hex, name}
+// parse "- #HEX (Name)" to {hex, name}
 function parsePaletteArray(arr) {
   if (!Array.isArray(arr)) return [];
   return arr.map(str => {
@@ -18,7 +18,7 @@ function parsePaletteArray(arr) {
   });
 }
 
-// Helper to safely parse LLM response (strip markdown code block if present)
+// parse LLM response
 function safeParseLLMResponse(llm_response) {
   if (typeof llm_response !== 'string') return llm_response;
   let cleaned = llm_response.trim();
@@ -104,9 +104,9 @@ const SectionCard = ({ title, icon, bg, children }) => (
   </div>
 );
 
-// Main Quiz Response Display UI
+//  Quiz Response Display 
 const AIResponseDisplayQuiz = ({ response }) => {
-  // Always extract llm_response if present, then parse safely
+  
   const parsedResponse = safeParseLLMResponse(response && response.llm_response ? response.llm_response : response);
   const { season, why, palettes, clothing, makeup } = parseFormattedQuizResponse(parsedResponse);
   const seasonColor = seasonColors[season] || "#7b7be5";
@@ -129,12 +129,12 @@ const AIResponseDisplayQuiz = ({ response }) => {
     }}>
       {hasContent ? <>
         <div style={{ flex: 1, minWidth: 340 }}>
-          {/* Season Header */}
+          /* Season Header */
           <div style={{ textAlign: "center", marginBottom: 32 }}>
             <div style={{ display: "inline-block", background: seasonColor + "22", color: seasonColor, borderRadius: 20, padding: "6px 22px", fontWeight: 700, fontSize: 40, marginBottom: 10 }}>
               {season ? `${season} Season` : "Season"}
             </div>
-            {/* Why this Season */}
+            /* Why this Season */
           {why.length > 0 && (
             <SectionCard title="Why this season?" bg="#fef9f2">
               {why.map((line, idx) => (
@@ -161,7 +161,7 @@ const AIResponseDisplayQuiz = ({ response }) => {
           )}
         </div>
         <div style={{ flex: 2, minWidth: 400 }}>
-          {/* Palette Sections */}
+          /* Palette Sections */
           {palettes.primary?.length > 0 && (
             <SectionCard title="Primary Colors" icon={<span style={{ color: '#3b82f6' }}>●</span>} bg="#fff">
               <SwatchRow colors={palettes.primary} />

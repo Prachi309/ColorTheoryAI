@@ -4,22 +4,18 @@ import os
 import os.path as osp
 import random
 from collections import Counter
-
 import cv2
 import numpy as np
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
 from skimage.filters import gaussian
-
 import facer
-
 import mediapipe as mp
-
 from dotenv import load_dotenv
 import os
 
-load_dotenv()  # This loads the .env file
+load_dotenv() 
 
 api_key = os.getenv("API_KEY")
 
@@ -37,7 +33,7 @@ def get_rgb_codes(path):
 
     seg_logits = faces['seg']['logits']
     seg_probs = seg_logits.softmax(dim=1)  # nfaces x nclasses x h x w
-    seg_probs = seg_probs.cpu() #if you are using GPU
+    seg_probs = seg_probs.cpu() 
 
     tensor = seg_probs.permute(0, 2, 3, 1)
     tensor = tensor.squeeze().numpy()
@@ -58,7 +54,7 @@ def filter_lip_random(rgb_codes,randomNum=40):
     blue_condition = (rgb_codes[:, 2] <= 227)
     red_condition = (rgb_codes[:, 0] >= 97)
     filtered_rgb_codes = rgb_codes[blue_condition & red_condition]
-    # ✅ CORRECT - Deterministic sampling
+    # Deterministic sampling
     step = max(1, filtered_rgb_codes.shape[0] // randomNum)
     indices = np.arange(0, filtered_rgb_codes.shape[0], step)[:randomNum]
     random_rgb_codes = filtered_rgb_codes[indices]
@@ -99,7 +95,7 @@ def calc_dis(rgb_codes):
 
 def save_skin_mask(img_path):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    image = facer.hwc2bchw(facer.read_hwc(img_path)).to(device=device)  # image: 1 x 3 x h x w
+    image = facer.hwc2bchw(facer.read_hwc(img_path)).to(device=device)  
     face_detector = facer.face_detector('retinaface/mobilenet', device=device)
 
     with torch.inference_mode():
@@ -112,7 +108,7 @@ def save_skin_mask(img_path):
 
     seg_logits = faces['seg']['logits']
     seg_probs = seg_logits.softmax(dim=1)
-    seg_probs = seg_probs.cpu() #if you are using GPU
+    seg_probs = seg_probs.cpu() 
     tensor = seg_probs.permute(0, 2, 3, 1)
     tensor = tensor.squeeze().numpy()
 
@@ -207,14 +203,14 @@ def analyze_lip_color(image_path):
     if rgb_codes is None or len(rgb_codes) == 0:
         return {"error": "No lip region detected"}
 
-    # Use k-means for dominant color
+    # k-means for dominant color
     try:
         from sklearn.cluster import KMeans
     except ImportError:
         raise ImportError("scikit-learn is required for k-means clustering. Please add it to requirements.txt.")
     kmeans = KMeans(n_clusters=1, random_state=42).fit(rgb_codes)
     dominant_color = kmeans.cluster_centers_[0].astype(int)
-    # Convert to Python int for JSON serialization
+    # Converting to Python int for JSON serialization
     dominant_color_rgb = tuple(int(x) for x in dominant_color)
     dominant_color_hex = '#%02x%02x%02x' % dominant_color_rgb
 
@@ -282,11 +278,11 @@ def analyze_hair_color(image_path):
     print('Segmentation tensor shape:', tensor.shape)
     num_classes = tensor.shape[2] if tensor.ndim == 3 else 0
     print('Number of available classes:', num_classes)
-    # Try to access all classes and print their mean mask value
+    # Accessing all classes and printing their mean mask value
     for idx in range(num_classes):
         mask = tensor[:, :, idx]
         print(f'Class {idx} mean mask value:', mask.mean())
-    # For now, try the last class as a guess for hair
+    # trying the last class as a guess for hair
     hair_mask = tensor[:, :, -1]
     binary_mask = (hair_mask >= 0.5).astype(int)
     sample = cv2.imread(image_path)
@@ -316,11 +312,11 @@ def analyze_hair_color(image_path):
             "Content-Type": "application/json"
         }
         data = {
-            "model": "mistralai/mistral-small-3.2-24b-instruct:free",  # ✅ CORRECT
+            "model": "mistralai/mistral-small-3.2-24b-instruct:free",  
             "messages": [{"role": "user", "content": prompt}]
         }
         response = requests.post(url, headers=headers, json=data)
-        print("OpenRouter response:", response.status_code, response.text)  # For debugging
+        print("OpenRouter response:", response.status_code, response.text)  
         return response.json()
 
 

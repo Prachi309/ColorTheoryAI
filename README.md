@@ -1,3 +1,5 @@
+pip install git+https://github.com/serpapi/serpapi-python.git
+
 # ColorAI: Personal Color Analysis App
 
 ColorAI is a modern web application that uses AI-powered color analysis to help you discover your most flattering colors. Upload a photo or take a personalized quiz, and get a custom color palette, clothing, and makeup recommendations tailored to your unique features.

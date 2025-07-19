@@ -20,38 +20,31 @@ import logging
 
 
 app = FastAPI()
-from fastapi.middleware.cors import CORSMiddleware
+
+
+# Get frontend URL from environment variable
+frontend_url = os.getenv("VITE_FRONTEND_URL")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Your frontend's URL
+    allow_origins=[frontend_url],  # Frontend URL from environment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-  
+SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 @app.get("/")
 async def root():
     return {"message": "Colorinsight Personal Color Analysis API", "endpoints": ["/image", "/lip"], "docs": "/docs"}
 
-# origins = [
-#     "http://localhost:3000"  # 스프링 부트 애플리케이션이 실행 중인 도메인
-# ]
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=origins,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
 
 @app.post("/image")
 async def image(file: UploadFile = File(None)):
 
     try:
         if file and file.filename:
-            # Handle file upload
+            # File upload handling
             print(f"Received file: {file.filename}")
             with open("saved.jpg", "wb") as fi:
                 content = await file.read()
@@ -59,7 +52,7 @@ async def image(file: UploadFile = File(None)):
         else:
             raise HTTPException(status_code=400, detail="No image file provided. Please upload an image file.")
       
-        # Call the new function
+       
         eye_color = f.get_eye_color("saved.jpg")
       
         f.save_skin_mask("saved.jpg")
@@ -73,13 +66,13 @@ async def image(file: UploadFile = File(None)):
         elif ans == 0:
             ans = 3
 
-        # Return result directly instead of sending to another service
+        # Returning result directly 
         season_names = {1: "Spring", 2: "Summer", 3: "Autumn", 4: "Winter"}
         return JSONResponse(content={
             "message": "complete",
             "result": ans,
             "season": season_names.get(ans, "Unknown"),
-            "eye_color": eye_color  # Add this line to see the result
+            "eye_color": eye_color  
         })
         
     except Exception as e:
@@ -97,7 +90,7 @@ async def lip(file: UploadFile = File(None)):
         else:
             raise HTTPException(status_code=400, detail="No image file provided. Please upload an image file.")
 
-        # Use the new lip color analysis function
+        # lip color analysis function
         result = f.analyze_lip_color("saved.jpg")
         os.remove("saved.jpg")
 
@@ -208,14 +201,14 @@ async def analyze_features(file: UploadFile = File(None)):
         else:
             raise HTTPException(status_code=400, detail="No image file provided. Please upload an image file.")
 
-        # Call all feature extraction functions
+        # feature extraction functions for all features
         skin = f.analyze_skin_color("saved.jpg")
         hair = f.analyze_hair_color("saved.jpg")
         lips = f.analyze_lip_color("saved.jpg")
         eyes = f.get_eye_color("saved.jpg")
         os.remove("saved.jpg")
 
-        # Build the response
+        
         return JSONResponse(content={
             "message": "complete",
             "skin": skin,
@@ -244,7 +237,7 @@ def get_palette_from_llm(prompt, api_key):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "mistralai/mistral-small-3.2-24b-instruct:free",  # Correct model string
+        "model": "mistralai/mistral-small-3.2-24b-instruct:free",  #mistral model AI
         "messages": [{"role": "user", "content": prompt}]
     }
     response = requests.post(url, headers=headers, json=data)
@@ -255,7 +248,7 @@ async def palette_llm(
     file: UploadFile = File(...),
     openrouter_api_key: str = Query(...),
     prompt: str = Form(None),
-    season: str = Form(None)  # <-- new
+    season: str = Form(None)  
 ):
     try:
         if not openrouter_api_key:
@@ -399,7 +392,7 @@ async def quiz_palette_llm(
         if not openrouter_api_key:
             raise HTTPException(status_code=400, detail="API key required as query parameter.")
 
-        # Build the prompt from quiz answers
+        
         prompt_text = build_quiz_palette_prompt(quiz_answers)
 
         llm_response = get_palette_from_llm(prompt_text, openrouter_api_key)
@@ -421,11 +414,11 @@ async def quiz_palette_llm(
 @app.post("/api/style-recommendation")
 async def style_recommendation(request: Request, openrouter_api_key: str = Query(...)):
     data = await request.json()
-    # Call the new function in functions.py
+    
     suggestion = f.get_style_recommendation_from_llm(data, openrouter_api_key)
     return JSONResponse({"suggestion": suggestion})
 
-SERPAPI_KEY = "22b051b2e9182bcb71d59fb43727c5fcb0374fdffcae2697defebbbe6bba0952"
+
 
 @app.get("/api/serpapi-proxy")
 def serpapi_proxy(q: str):

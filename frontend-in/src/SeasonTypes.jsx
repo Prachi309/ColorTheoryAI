@@ -30,59 +30,115 @@ const seasonData = [
 const SeasonTypes = () => (
   <div style={{
     width: "100%",
-   
-    padding: "48px 0 32px 0"
+    padding: "40px 24px 32px 24px",
+    background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
+    borderRadius: "32px 32px 0 0",
+    marginTop: "32px"
   }}>
-    <h2 style={{ textAlign: "center", fontSize: 32, fontWeight: 900, marginBottom: 36, color: "#222" }}>
-      Color Season Types
-    </h2>
-    <div style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 36,
-      flexWrap: "nowrap",
-      maxWidth: 1200,
-      margin: "0 auto"
-    }}>
-      {seasonData.map((season) => (
-        <div key={season.name} style={{
-          background: "#fff",
-          borderRadius: 20,
-          boxShadow: "0 4px 24px #0001",
-          padding: "32px 36px 28px 36px",
-          minWidth: 240,
-          maxWidth: 260,
-          textAlign: "center",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center"
-        }}>
-          <div style={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            background: season.color,
-            marginBottom: 18,
-            boxShadow: "0 2px 8px #0002"
-          }} />
-          <div style={{ fontWeight: 700, fontSize: 22, color: "#222", marginBottom: 6 }}>{season.name}</div>
-          <div style={{ color: "#666", fontSize: 15, marginBottom: 16 }}>{season.description}</div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-            {season.swatches.map((swatch, i) => (
-              <div key={i} style={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                background: swatch,
-                border: "1.5px solid #eee"
-              }} />
-            ))}
+    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <h2 style={{ 
+        textAlign: "center", 
+        fontSize: "2rem", 
+        fontWeight: 900, 
+        marginBottom: "4px", 
+        color: "#fff",
+        letterSpacing: "1px",
+        opacity: 0,
+        animation: "fadeInUp 0.8s 0.2s forwards"
+      }}>
+        Color Season Types
+      </h2>
+      <p style={{
+        textAlign: "center",
+        fontSize: "1rem",
+        color: "rgba(255,255,255,0.8)",
+        marginBottom: "32px",
+        fontWeight: 500,
+        opacity: 0,
+        animation: "fadeInUp 0.8s 0.4s forwards"
+      }}>
+        Discover your perfect color palette based on seasonal analysis
+      </p>
+      
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: "20px",
+        flexWrap: "wrap"
+      }}>
+        {seasonData.map((season, index) => (
+          <div key={season.name} className="season-card" style={{
+            opacity: 0,
+            animation: `fadeInUp 0.8s ${0.6 + index * 0.1}s forwards`
+          }}
+          >
+            <div style={{
+              width: "60px",
+              height: "60px",
+              borderRadius: "50%",
+              background: `linear-gradient(135deg, ${season.color} 0%, ${season.color}dd 100%)`,
+              marginBottom: "16px",
+              boxShadow: `0 6px 20px ${season.color}33`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "24px",
+              color: "#fff",
+              fontWeight: "bold"
+            }}>
+              {season.name.charAt(0)}
+            </div>
+            
+            <h3 style={{ 
+              fontWeight: 800, 
+              fontSize: "1.2rem", 
+              color: "#222", 
+              marginBottom: "6px",
+              letterSpacing: "0.5px"
+            }}>
+              {season.name}
+            </h3>
+            
+            <p style={{ 
+              color: "#666", 
+              fontSize: "0.9rem", 
+              marginBottom: "16px",
+              fontWeight: 500,
+              lineHeight: "1.4"
+            }}>
+              {season.description}
+            </p>
+            
+            <div style={{ 
+              display: "flex", 
+              gap: "8px", 
+              justifyContent: "center",
+              flexWrap: "wrap"
+            }}>
+              {season.swatches.map((swatch, i) => (
+                <div key={i} style={{
+                  width: "22px",
+                  height: "22px",
+                  borderRadius: "50%",
+                  background: swatch,
+                  border: "2px solid rgba(255,255,255,0.8)",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  transition: "transform 0.2s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = "scale(1.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = "scale(1)";
+                }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   </div>
 );
 
-export default SeasonTypes; 
+export default SeasonTypes;
